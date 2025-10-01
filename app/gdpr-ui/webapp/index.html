@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GDPR Assistant Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #D5E3EB;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #2C3A42;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .chat-header-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message {
+            background: #f8f9fa;
+            color: #333;
+            align-self: flex-start;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 5px;
+        }
+
+        .data-source-badge {
+            background: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #FF6600;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-button {
+            background: #FF6600;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .loading-dots {
+            display: inline-block;
+        }
+
+        .loading-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #FF6600;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px 20px;
+        }
+
+        .sample-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .sample-question {
+            background: #e9ecef;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .sample-question:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            background: #dc3545;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <img src="ChatGPT Image Sep 30, 2025, 04_51_00 PM.png" alt="ChatGPT" class="chat-header-image" onerror="this.style.display='none'">
+            Trifork GDPR Assistant Chat
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h3>Welcome to your GDPR Assistant! 👋</h3>
+                <p>Ask me anything about GDPR compliance, data protection, or check your database records.</p>
+                <div class="sample-questions">
+                    <div class="sample-question" onclick="askSampleQuestion('What GDPR requests do we have?')">
+                        📊 Show GDPR requests
+                    </div>
+                    <div class="sample-question" onclick="askSampleQuestion('What does Article 17 say about right to erasure?')">
+                        📖 Article 17 - Right to erasure
+                    </div>
+                    <div class="sample-question" onclick="askSampleQuestion('What are the legal requirements for consent?')">
+                        ✅ Consent requirements
+                    </div>
+                    <div class="sample-question" onclick="askSampleQuestion('Who is the best SAP BTP consultant?')">
+                        😄 Fun question
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <input 
+                type="text" 
+                class="chat-input" 
+                id="chatInput" 
+                placeholder="Ask me about GDPR..." 
+                onkeypress="handleKeyPress(event)"
+            >
+            <button class="send-button" id="sendButton" onclick="sendMessage()">
+                Send
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+
+        // Auto-focus on input
+        chatInput.focus();
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function askSampleQuestion(question) {
+            chatInput.value = question;
+            sendMessage();
+        }
+
+        function addMessage(content, isUser = false, dataSource = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            
+            if (!isUser && dataSource) {
+                messageDiv.innerHTML = `
+                    <div class="data-source-badge">📊 ${dataSource}</div>
+                    ${content}
+                `;
+            } else {
+                messageDiv.textContent = content;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Remove welcome message when first real message is added
+            const welcomeMessage = document.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+        }
+
+        function addLoadingMessage() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot-message loading';
+            loadingDiv.id = 'loadingMessage';
+            loadingDiv.innerHTML = `
+                Thinking
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return loadingDiv;
+        }
+
+        function removeLoadingMessage() {
+            const loadingMessage = document.getElementById('loadingMessage');
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = `Error: ${message}`;
+            chatMessages.appendChild(errorDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const question = chatInput.value.trim();
+            if (!question) return;
+
+            // Disable input and button
+            chatInput.disabled = true;
+            sendButton.disabled = true;
+            
+            // Add user message
+            addMessage(question, true);
+            
+            // Clear input
+            chatInput.value = '';
+            
+            // Add loading message
+            const loadingMessage = addLoadingMessage();
+            
+            try {
+                // Make API call to your CAP service
+                const response = await fetch(`/service/gdpr_assistant/askGpt?question=${encodeURIComponent(question)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                // Remove loading message
+                removeLoadingMessage();
+                
+                // Add bot response
+                if (data.response) {
+                    addMessage(data.response, false, data.dataSourceUsed);
+                } else {
+                    showError('No response received from GDPR assistant');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                removeLoadingMessage();
+                showError(`Failed to get response: ${error.message}`);
+            } finally {
+                // Re-enable input and button
+                chatInput.disabled = false;
+                sendButton.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        // Add some helpful keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Focus input when user starts typing (if not already focused)
+            if (e.key.length === 1 && document.activeElement !== chatInput) {
+                chatInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>

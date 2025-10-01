@@ -1,0 +1,60 @@
+_schema-version: '3.1'
+ID: gdpr-assistant-db
+version: 1.0.0
+description: "GDPR Assistant - Database Only Deployment"
+parameters:
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci # Install dependencies using clean install
+        - cds build # Build CAP application for production
+
+modules:
+# Main CAP services
+  - name: gdpr-assistant-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      instances: 1
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm-ci
+    provides:
+      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+        properties:
+          srv-url: ${default-url}
+    requires:
+      - name: gdpr-assistant-auth
+      - name: gdpr-assistant-db
+  # -------------------- DATABASE DEPLOYER MODULE ------------------------
+  - name: gdpr-assistant-db-deployer
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+      disk-quota: 1024M
+    requires:
+      - name: gdpr-assistant-db
+
+
+resources:
+  # ------------------- HANA HDI CONTAINER ----------------------
+  - name: gdpr-assistant-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+  # XSUAA service
+  - name: gdpr-assistant-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: gdpr-assistant-${space}
+        tenant-mode: dedicated
+

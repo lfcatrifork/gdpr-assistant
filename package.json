@@ -1,45 +1,66 @@
 {
-    "name": "gdpr-assistant",
-    "version": "1.0.0",
-    "description": "A simple CAP project.",
-    "dependencies": {
-        "@cap-js/hana": "^2",
-        "@sap-cloud-sdk/http-client": "^4.1.2",
-        "@sap-cloud-sdk/util": "^4.1.2",
-        "@sap/cds": "^9",
-        "@sap/low-code-event-handler": "^1.2.5",
-        "@sap/xsenv": ">=3.3.2 <3.3.3",
-        "@sap/xssec": "^4.10.0",
-        "express": "^4",
-        "hdb": "^2.26.1",
-        "passport": "^0.7.0"
-    },
-    "devDependencies": {
-        "@cap-js/sqlite": "^2",
-        "@sap/dev-cap-tools": "^1.31.0"
-    },
-    "scripts": {
-        "start": "cds-serve",
-        "start-local": "npm run generate-entry-point && npm run cds-watch",
-        "generate-entry-point": "dev-cap-tools gen-entrypoint",
-        "cds-watch": "cds watch --open"
-    },
-    "private": true,
-    "cds": {
-        "requires": {
-            "[production]": {
-                "db": "hana",
-                "auth": "xsuaa"
-            },
-            "auth": {
-                "[development]": {
-                    "kind": "dummy"
-                },
-                "[production]": {
-                    "kind": "xsuaa"
-                }
-            }
+  "name": "gdpr-assistant",
+  "version": "1.0.0",
+  "description": "A simple CAP project.",
+  "dependencies": {
+    "@cap-js/hana": "^2",
+    "@sap-cloud-sdk/http-client": "^4.1.2",
+    "@sap-cloud-sdk/util": "^4.1.2",
+    "@sap/cds": "^9",
+    "@sap/hana-client": "^2.25.31",
+    "@sap/low-code-event-handler": "^1.2.5",
+    "@sap/xsenv": ">=3.3.2 <3.3.3",
+    "@sap/xssec": "^4.10.0",
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.3",
+    "express": "^4",
+    "passport": "^0.7.0"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2",
+    "@sap/dev-cap-tools": "^1.31.0"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "start-local": "npm run generate-entry-point && npm run cds-watch",
+    "generate-entry-point": "dev-cap-tools gen-entrypoint",
+    "cds-watch": "cds watch --open",
+    "build": "cds build --production",
+    "build:db": "cds build --production",
+    "build:mta": "mbt build",
+    "deploy:cf": "npm run build:mta && cf deploy mta_archives/gdpr-assistant-db_1.0.0.mtar -f --retries 1",
+    "update-locks": "for dir in srv*/; do (cd \"$dir\" && echo \"Processing $dir\" && npm i --package-lock-only); done",
+    "start:replicator": "cds bind -a gdpr-assistant-srv && cds watch --profile hybrid"
+},
+  "private": true,
+  "cds": {
+    "requires": {
+      "[production]": {
+        "db": "hana",
+        "auth": "xsuaa"
+      },
+      "auth": {
+        "[development]": {
+          "kind": "dummy"
+        },
+        "[production]": {
+          "kind": "xsuaa"
         }
+      }
     },
-    "lcap": true
+    "build": {
+      "target": "gen",
+      "tasks": [
+        {
+          "for": "hana",
+          "dest": "db"
+        },
+        {
+          "for": "node-cf",
+          "dest": "srv"
+        }
+      ]
+    }
+  },
+  "lcap": true
 }

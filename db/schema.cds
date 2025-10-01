@@ -7,3 +7,9 @@ entity AICoreQueries : cuid {
   responseText: String(500);
 }
 
+entity GDPRRequests {
+  key topic: String;
+  key question: String;
+  answer: String;
+}
+
